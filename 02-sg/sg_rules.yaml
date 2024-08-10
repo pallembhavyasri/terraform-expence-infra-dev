@@ -1,0 +1,85 @@
+#we are deleting ansible as we wanted to use pull based where we will pull playbooks direcly from github
+#now backend will be connected with only ALB but not with FE hence del BE_FE
+- name: SG Rules
+   sg:
+     - expence-dev-db
+     - expence-dev-backend
+     - expence-dev-frontend
+     - expence-dev-bastion
+     - expence-dev-app-alb #backend load balancer 
+    - expence-dev-vpn 
+  vpn:
+     - name: vpn_public
+      desc: vpn accepting connection  from public
+      source: public
+      port: 443, 1194, 943, 22 #VPN standard ports 
+  app_alb: #it is private LB hence we need to connect with VPN inorder to connect with app_alb
+     - name: app_alb_vpn
+      desc: app_alb accepting connection  from vpn
+      source: vpn
+      port: 80 #listner http:80 || https:443
+    - name: app_alb_frontend
+      desc: app_alb accepting connection  from frontend
+      source: frontend
+      port: 80
+    - name: db_backend
+      desc: db accepting connection  from backend
+      source: backend
+      port: 3306
+  db:
+     - name: db_backend
+      desc: db accepting connection  from backend
+      source: backend
+      port: 3306
+     - name: db_bastion
+      desc: db accpting from connection bastion
+      source: bastion
+      port: 3306 #DB will not have the SSH access 
+     - name: db_vpn
+      desc: db accpting from connection vpn
+      source: vpn
+      port: 3306 #DB will not have the SSH access 
+  backend:
+     - name: backend_app_alb
+      desc: backend accepting connection from app_alb
+      source: app_alb
+      port: 8080
+     - name: backend_bastion
+      desc: backend accepting connection from bastion
+      source: bastion
+      port: 22
+     - name: backend_vpn_ssh
+      desc: backend accepting connection from vpn_ssh
+      source: vpn_ssh
+      port: 22 #throw ssh access 
+     - name: backend_vpn_http
+      desc: backend accepting connection from vpn_http
+      source: vpn_http
+      port: 8080 #application accessing directly from browser
+  frontend:
+     - name: frontend_web_alb
+      desc: frontend accepting connection from web_alb
+      source: web_alb
+      port: 80
+     - name: frontend_bastion
+      desc: frontend accepting connection from bastion
+      source: bastion
+      port: 22
+    - name: frontend_vpn
+      desc: frontend accepting connection from vpn
+      source: vpn
+      port: 22
+  bastion:
+     - name: bastion_public
+      desc: bastion accepting from public
+      source: public
+      port: 22
+   web_alb:
+  - name: web_alb_public
+    desc: web alb accepting connections from public
+    source: public
+    port: 80
+  - name: web_alb_public_https
+    desc: web alb accepting connections from public
+    source: public
+    port: 443
