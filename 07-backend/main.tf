@@ -87,7 +87,7 @@ resource "null_resource" "backend_delete" {
   #now we need to excute using the remote exec
   provisioner "local-exec" {
     #terminate using aws command line 
-    command = "aws ec2 terminate-instance --instance-ids ${module.backend.id}"
+    command = "aws ec2 terminate-instances --instance-ids ${module.backend.id}"
   }
 
   #this needs to terminate once AMI is created 
@@ -146,7 +146,7 @@ resource "aws_autoscaling_group" "backend" {
   health_check_grace_period = 60
   health_check_type         = "ELB"
   desired_capacity          = 1
-  target_group_arns = [aws_lb_listener_rule.backend.arn] #adding the target group to the backend auto scaling group 
+  target_group_arns = [aws_lb_target_group.backend.arn] #adding the target group to the backend auto scaling group 
   launch_template {
     id      = aws_launch_template.backend.id
     version = "$Latest"
@@ -182,7 +182,7 @@ resource "aws_autoscaling_group" "backend" {
 
 resource "aws_autoscaling_policy" "backend" {
   name                   = "${var.project_name}-${var.environment}-backend"
-  adjustment_type        = "TargetTrackingScaling"
+  policy_type        = "TargetTrackingScaling"
   autoscaling_group_name = aws_autoscaling_group.backend.name
 
 target_tracking_configuration {

@@ -146,7 +146,7 @@ resource "aws_autoscaling_group" "frontend" {
   health_check_grace_period = 60
   health_check_type         = "ELB"
   desired_capacity          = 1 #as per traffic we can increase the capacity 
-  target_group_arns = [aws_lb_listener_rule.frontend.arn] #adding the target group to the frontend auto scaling group 
+  target_group_arns = [aws_lb_target_group.frontend.arn] #adding the target group to the frontend auto scaling group 
   launch_template {
     id      = aws_launch_template.frontend.id
     version = "$Latest"
@@ -182,7 +182,7 @@ resource "aws_autoscaling_group" "frontend" {
 
 resource "aws_autoscaling_policy" "frontend" {
   name                   = "${var.project_name}-${var.environment}-frontend"
-  adjustment_type        = "TargetTrackingScaling"
+  policy_type        = "TargetTrackingScaling"
   autoscaling_group_name = aws_autoscaling_group.frontend.name
 
 target_tracking_configuration {
