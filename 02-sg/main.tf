@@ -146,7 +146,7 @@ resource "aws_security_group_rule" "backend_vpn_http" {
 }
 
 
-#frontend is accepting the connection from web_alb,bastion, vpn
+#frontend is accepting the connection from web_alb,bastion, vpn, public
 
 resource "aws_security_group_rule" "frontend_web_alb" {
   type              = "ingress"
@@ -157,6 +157,7 @@ resource "aws_security_group_rule" "frontend_web_alb" {
   #source is where you are getting traffic form is internet here is it not there hence we are kepping the cidr block  
   security_group_id = module.frontend.sg_id #reciever ID 
 }
+
 
 resource "aws_security_group_rule" "frontend_bastion" {
   type              = "ingress"
@@ -175,6 +176,17 @@ resource "aws_security_group_rule" "frontend_vpn" {
   source_security_group_id = module.vpn.sg_id # source is where you are getting traffic form 
   security_group_id = module.frontend.sg_id #reciever ID 
 }
+
+resource "aws_security_group_rule" "frontend_public" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  #source is where you are getting traffic form is internet here is it not there hence we are kepping the cidr block  
+  security_group_id = module.frontend.sg_id #reciever ID 
+}
+
 
 
 #public is accepting the connection from bastion

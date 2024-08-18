@@ -11,7 +11,7 @@ module "frontend" {
   #we can keep in locals and use it here as well 
   subnet_id = local.public_subnet_id
   ami = data.aws_ami.ami_info.id 
-  user_data = file("backend.sh")
+  user_data = file("frontend.sh")
 
   tags = merge(
     var.common_tags,
@@ -53,76 +53,76 @@ resource "null_resource" "frontend" {
 
 #stop the server now when the null resources is exceuted 
 
-  resource "aws_ec2_instance_state" "backend" {
-  instance_id = module.backend.id
+  resource "aws_ec2_instance_state" "frontend" {
+  instance_id = module.frontend.id
   state       = "stopped"
   #when to trigger when null resource is exceuted 
-  depends_on = [ null_resource.backend ]
+  depends_on = [ null_resource.frontend ]
 }
 
 #take the AMI from instance 
 
-resource "aws_ami_from_instance" "backend" {
+resource "aws_ami_from_instance" "frontend" {
   name               = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
-  source_instance_id = module.backend.id
+  source_instance_id = module.frontend.id
   #take AMI when server is stopped 
-  depends_on = [ aws_ec2_instance_state.backend ]
+  depends_on = [ aws_ec2_instance_state.frontend ]
 }
 
 #terminate the server 
 
 
-resource "null_resource" "backend_delete" {
+resource "null_resource" "frontend_delete" {
   triggers = {
-    instance_id = module.backend.id # this will be triggered everytime instance is created 
+    instance_id = module.frontend.id # this will be triggered everytime instance is created 
   }
   
-  connection {
-    type     = "ssh"
-    user     = "ec2-user"
-    password = "DevOps321"
-    host     = module.backend.private_ip
-  }
+  # connection {
+  #   type     = "ssh"
+  #   user     = "ec2-user"
+  #   password = "DevOps321"
+  #   host     = module.frontend.public_ip
+  # }
 
   #now we need to excute using the remote exec
   provisioner "local-exec" {
     #terminate using aws command line 
-    command = "aws ec2 terminate-instance --instance-ids ${module.backend.id}"
+    command = "aws ec2 terminate-instance --instance-ids ${module.frontend.id}"
   }
 
   #this needs to terminate once AMI is created 
-  depends_on = [ aws_ami_from_instance.backend ]
+  depends_on = [ aws_ami_from_instance.frontend ]
 }
 
 #target group with health check 
-resource "aws_lb_target_group" "backend" {
-  name     = "${var.project_name}-${var.environment}-backend"
-  port     = 8080
+resource "aws_lb_target_group" "frontend" {
+  name     = "${var.project_name}-${var.environment}-frontend"
+  port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_ssm_parameter.vpc_id.value
    health_check {
-    path                = "/health"
-    port                = 8080
+    path                = "/"
+    port                = 80
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 2
-    matcher             = "200"
+    matcher             = "200-299"
   }
 }
 
 #launch template
 
-resource "aws_launch_template" "backend" {
-  name = "${var.project_name}-${var.environment}-backend"
+resource "aws_launch_template" "frontend" {
+  name = "${var.project_name}-${var.environment}-frontend"
 
  
-  image_id = aws_ami_from_instance.backend.id 
+  image_id = aws_ami_from_instance.frontend.id 
 
   instance_initiated_shutdown_behavior = "terminate"
 
   instance_type = "t3.micro"
   update_default_version = true #sets the latest version to default 
-  vpc_security_group_ids = [data.aws_ssm_parameter.backend_sg_id.value]
+  vpc_security_group_ids = [data.aws_ssm_parameter.frontend_sg_id.value]
 
   tag_specifications {
     resource_type = "instance"
@@ -130,28 +130,28 @@ resource "aws_launch_template" "backend" {
     tags = merge(
     var.common_tags,
     {
-        Name = "${var.project_name}-${var.environment}-backend"
+        Name = "${var.project_name}-${var.environment}-frontend"
     }
   )
   }
 
 }
 
-#autoscaling is means instance will be added to backend module 
+#autoscaling is means instance will be added to frontend module 
 
-resource "aws_autoscaling_group" "backend" {
-  name                      = "${var.project_name}-${var.environment}-backend"
+resource "aws_autoscaling_group" "frontend" {
+  name                      = "${var.project_name}-${var.environment}-frontend"
   max_size                  = 5
   min_size                  = 1
   health_check_grace_period = 60
   health_check_type         = "ELB"
-  desired_capacity          = 1
-  target_group_arns = [aws_lb_listener_rule.backend.arn] #adding the target group to the backend auto scaling group 
+  desired_capacity          = 1 #as per traffic we can increase the capacity 
+  target_group_arns = [aws_lb_listener_rule.frontend.arn] #adding the target group to the frontend auto scaling group 
   launch_template {
-    id      = aws_launch_template.backend.id
+    id      = aws_launch_template.frontend.id
     version = "$Latest"
   }
-  vpc_zone_identifier       = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
+  vpc_zone_identifier       = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
 
   instance_refresh {
     strategy = "Rolling" #one is terminated and another one created 
@@ -163,7 +163,7 @@ resource "aws_autoscaling_group" "backend" {
 
   tag {
     key                 = "name"
-    value               = "${var.project_name}-${var.environment}-backend"
+    value               = "${var.project_name}-${var.environment}-frontend"
     propagate_at_launch = true
   }
 
@@ -180,10 +180,10 @@ resource "aws_autoscaling_group" "backend" {
 
 #autoscalling policy for CPU utilization
 
-resource "aws_autoscaling_policy" "backend" {
-  name                   = "${var.project_name}-${var.environment}-backend"
+resource "aws_autoscaling_policy" "frontend" {
+  name                   = "${var.project_name}-${var.environment}-frontend"
   adjustment_type        = "TargetTrackingScaling"
-  autoscaling_group_name = aws_autoscaling_group.backend.name
+  autoscaling_group_name = aws_autoscaling_group.frontend.name
 
 target_tracking_configuration {
     predefined_metric_specification {
@@ -197,18 +197,18 @@ target_tracking_configuration {
 
 #ALB listner rule 
 
-resource "aws_lb_listener_rule" "backend" {
-  listener_arn = data.aws_ssm_parameter.app_alb_listener_arn.value
+resource "aws_lb_listener_rule" "frontend" {
+  listener_arn = data.aws_ssm_parameter.web_alb_listener_arn_https.value #we are getting value from parameters from web alb 
   priority     = 100 #less umber will be first validated 
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
   }
 
   condition {
     host_header {
-      values = ["backend.app-${var.environment}.${var.zone_name}"]
+      values = ["web-${var.environment}.${var.zone_name}"]
     }
   }
 }

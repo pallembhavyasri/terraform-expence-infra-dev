@@ -25,7 +25,7 @@ resource "aws_lb_listener" "http" {
 
     fixed_response {
       content_type = "text/html"
-      message_body = "<h1>This is fixed response from Web ALB</h1>"
+      message_body = "<h1>This is fixed response from Web ALB HTTP</h1>"
       status_code  = "200"
     }
   }
