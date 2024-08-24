@@ -32,7 +32,7 @@ resource "null_resource" "frontend" {
     type     = "ssh"
     user     = "ec2-user"
     password = "DevOps321"
-    host     = module.frontend.public_ip
+    host     = module.frontend.private_ip
   }
 
   #copy the file from local to server by using below 
@@ -45,7 +45,7 @@ resource "null_resource" "frontend" {
   provisioner "remote-exec" {
     inline = [ 
         "chmod +x /tmp/frontend.sh",
-        "sudo su /tmp/frontend.sh ${var.common_tags.Component} ${var.environment}"
+        "sudo sh /tmp/frontend.sh ${var.common_tags.Component} ${var.environment}"
      ]
     
   }
@@ -87,7 +87,7 @@ resource "null_resource" "frontend_delete" {
   #now we need to excute using the remote exec
   provisioner "local-exec" {
     #terminate using aws command line 
-    command = "aws ec2 terminate-instance --instance-ids ${module.frontend.id}"
+    command = "aws ec2 terminate-instances --instance-ids ${module.frontend.id}"
   }
 
   #this needs to terminate once AMI is created 
