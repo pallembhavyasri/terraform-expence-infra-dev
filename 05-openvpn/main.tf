@@ -3,7 +3,7 @@ resource "aws_key_pair" "vpn" {
   key_name   = "vpn"
   #we can place using file 
   # ~ windows home directory 
-  #public_key = file("~/.Bhavya/openvpn.pub")
+  #public_key = file("/c/Bhavya/openvpn.pub")
   #we can directly place the public vpn as below 
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC36SHFMl6+OFqApgetF8TNumEjIHJ0ZLfChmhraI6i1f1WpTia0vjyTTiP2e/8KLRE+nIuSX8V3rLlBaJ/VJbCxmzgxAXavoADnOvF5AEUKU6S0VTbVnYpZbcgUs8SiFOPCxRm9zY9eT7XDvUnDmKOvlltCZ5F+yneF+6uQgt2s4OaTBZHHwYuV1YkQFiaBlsD2EJLlZhTJrTy4XM9XOZAhXtKw5NMwnIfgo8Qwh0FL10oj/FM+qcjS3q3QyOaFDAaj9b6l0MQrQxHwxlKq9hxiaO0oHF+E+d3C8kSsyJrQCRu4jli6fiWDlbTDiLDVlLlaKWvGlnz/MvirJVemsoU3hGr65IZEp/QF2FQ/0pgZ/708bXCUKbXBFwLiGAMqBPBwcPjX8Cz1oZfpvykreQFI+hOCwBS1y35ACe43MA9F/qABkj9wQ+SDmMifUeKorJME/WB2kqP8EJsDh3ohWAF4SpzwuPmmqtEjlhtXp7Iu58yG1zFgJa7QMURQYz89K0= param@Chinnu"
 }
