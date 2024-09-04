@@ -145,6 +145,25 @@ resource "aws_security_group_rule" "backend_vpn_http" {
   security_group_id = module.backend.sg_id #reciever ID 
 }
 
+#added as part of Jenkins CICD
+resource "aws_security_group_rule" "backend_default_vpc" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks = ["172.31.0.0/16"] #assume the tools instance is default VPC and keeping the IPv4
+  security_group_id = module.backend.sg_id
+}
+
+#added as part of Jenkins CICD
+resource "aws_security_group_rule" "frontend_default_vpc" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks = ["172.31.0.0/16"] #assume the tools instance is default VPC and keeping the IPv4
+  security_group_id = module.frontend.sg_id
+}
 
 #frontend is accepting the connection from web_alb,bastion, vpn, public
 
@@ -168,6 +187,7 @@ resource "aws_security_group_rule" "frontend_bastion" {
   security_group_id = module.frontend.sg_id #reciever ID 
 }
 
+
 resource "aws_security_group_rule" "frontend_vpn" {
   type              = "ingress"
   from_port         = 22
@@ -177,15 +197,16 @@ resource "aws_security_group_rule" "frontend_vpn" {
   security_group_id = module.frontend.sg_id #reciever ID 
 }
 
-resource "aws_security_group_rule" "frontend_public" {
-  type              = "ingress"
-  from_port         = 22
-  to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  #source is where you are getting traffic form is internet here is it not there hence we are kepping the cidr block  
-  security_group_id = module.frontend.sg_id #reciever ID 
-}
+# not required as we are connecting from vpn 
+# resource "aws_security_group_rule" "frontend_public" {
+#   type              = "ingress"
+#   from_port         = 22
+#   to_port           = 22
+#   protocol          = "tcp"
+#   cidr_blocks = ["0.0.0.0/0"]
+#   #source is where you are getting traffic form is internet here is it not there hence we are kepping the cidr block  
+#   security_group_id = module.frontend.sg_id #reciever ID 
+# }
 
 
 
